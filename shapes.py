@@ -1,5 +1,7 @@
+from abc import ABC, abstractmethod
 from PIL import Image, ImageDraw
 from colors import colors
+
 
 class Node:
 
@@ -7,7 +9,26 @@ class Node:
     self.coordinates = coordinates
 
 
-class Rectangle:
+class Shape(ABC):
+
+  @abstractmethod
+  def init_nodes_and_edges(self):
+    pass
+
+  @abstractmethod
+  def calc_point(self, node):
+    pass
+
+  @abstractmethod
+  def draw_nodes(self, img, width, height):
+    pass
+
+  @abstractmethod
+  def draw_edge(self, img, edge):
+    pass
+
+
+class Rectangle(Shape):
 
   def __init__(self, x_units, y_units):
     self.x_units = x_units
@@ -70,7 +91,7 @@ class Rectangle:
     start_y = center_y - ((self.y_units-1) * unit_length)//2
     return (start_x + x*unit_length, start_y + y*unit_length)
 
-  def draw_rect(self, img):
+  def draw_nodes(self, img):
     width, height = img.size
     point_radius = 3
     draw = ImageDraw.Draw(img)
@@ -80,9 +101,12 @@ class Rectangle:
         (x-point_radius, y-point_radius, x+point_radius, y+point_radius),
         fill=colors['black']
       )
-    # TODO: move drawing edges to a new function
-    for edge in self.edges:
-      points = []
-      for node in edge:
-        points.append(self.calc_point(node, width, height))
-      draw.line(points, fill=colors['black'], width=point_radius)
+
+  def draw_edge(self, img, edge):
+    width, height = img.size
+    line_width = 3
+    draw = ImageDraw.Draw(img)
+    points = []
+    for node in edge:
+      points.append(self.calc_point(node, width, height))
+    draw.line(points, fill=colors['black'], width=line_width)

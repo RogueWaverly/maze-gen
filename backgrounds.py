@@ -36,6 +36,10 @@ def rgb_gradient(width, height, x, y):
       ) // diffuse,
   )
 
+backgrounds = {
+  'rgb_gradient': rgb_gradient
+}
+
 ### DRAW BACKGROUND FUNCTIONS ###
 
 def draw_background(background, img):
@@ -43,6 +47,9 @@ def draw_background(background, img):
   pixels = img.load()
   for x in range(width):
     for y in range(height):
-      pixels[x, y] = background(width, height, x, y)
+      pixels[x, y] = backgrounds[background](width, height, x, y)
 
-# TODO: draw_random_background
+def draw_random_background(img):
+  import random
+  background = random.choice(list(backgrounds.keys()))
+  draw_background(background, img)
