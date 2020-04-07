@@ -41,8 +41,13 @@ backgrounds = {
 }
 
 ### DRAW BACKGROUND FUNCTIONS ###
+def validate_background(background):
+  if not background in backgrounds.keys():
+    error_msg = '{} is not a valid background.'.format(background)
+    raise ValueError(error_msg)
 
 def draw_background(background, img):
+  validate_background(background)
   width, height = img.size
   pixels = img.load()
   for x in range(width):

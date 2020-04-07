@@ -7,6 +7,13 @@ class Node:
 
   def __init__(self, coordinates=()):
     self.coordinates = coordinates
+    self.parent = self
+    self.rank = 0
+
+  def find_parent(self):
+    while self.parent != self.parent.parent:
+      self.parent = self.parent.parent
+    return self.parent
 
 
 class Shape(ABC):
