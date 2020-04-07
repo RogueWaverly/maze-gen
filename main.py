@@ -1,19 +1,8 @@
-from PIL import Image, ImageDraw
-from colors import colors
-import backgrounds
-import shapes
+from maze import Maze
 
 length = 512
-white = colors['white']
-img = Image.new('RGB', (length, length), white)
-
-backgrounds.draw_background('rgb_gradient', img)
-
-rect = shapes.Rectangle(16, 16)
-rect.draw_nodes(img)
-
-# TODO: make maze
-
-draw = ImageDraw.Draw(img)
-# TODO: save with unique name
-img.save("MAZE.png", "PNG")
+maze = Maze(length, length)
+maze.set_shape('Rectangle', 16, 16)
+maze.set_background('rgb_gradient')
+maze.draw_random_maze()
+maze.save_maze_as_png("MAZE")

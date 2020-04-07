@@ -24,7 +24,7 @@ class Shape(ABC):
     pass
 
   @abstractmethod
-  def draw_edge(self, img, edge):
+  def draw_edges(self, img, edges):
     pass
 
 
@@ -102,11 +102,12 @@ class Rectangle(Shape):
         fill=colors['black']
       )
 
-  def draw_edge(self, img, edge):
+  def draw_edges(self, img, edges):
     width, height = img.size
     line_width = 3
     draw = ImageDraw.Draw(img)
-    points = []
-    for node in edge:
-      points.append(self.calc_point(node, width, height))
-    draw.line(points, fill=colors['black'], width=line_width)
+    for edge in edges:
+      points = []
+      for node in edge:
+        points.append(self.calc_point(node, width, height))
+      draw.line(points, fill=colors['black'], width=line_width)
