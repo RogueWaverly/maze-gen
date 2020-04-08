@@ -42,20 +42,19 @@ class Maze():
 
     def _is_maze_edge(edge):
       nodes = [node for node in edge]
-#      print('node[0].parent = {}\tnode[1].parent = {}'.format(nodes[0].find_parent(), nodes[1].find_parent()))
-      if nodes[0].find_parent() == nodes[1].find_parent():
+      node0_parent = nodes[0].find_parent()
+      node1_parent = nodes[1].find_parent()
+      if node0_parent == node1_parent:
         return False
       else:
         # join sets
-        # TODO: figure out why the we are returning false Trues here
-        #       I suspect that sets are not being joined in place
         if nodes[0].rank < nodes[1].rank:
-          nodes[0].parent = nodes[1]
+          node0_parent.parent = node1_parent
         elif nodes[0].rank > nodes[1].rank:
-          nodes[1].parent = nodes[0]
+          node1_parent.parent = node0_parent
         else:
-          nodes[0].parent = nodes[1]
-          nodes[1].rank += 1
+          node0_parent.parent = node1_parent
+          node1_parent.rank += 1
         return True
 
     # reset maze
