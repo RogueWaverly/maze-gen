@@ -3,9 +3,9 @@ from PIL import Image, ImageDraw
 from colors import colors
 
 
-class Node:
+class PathNode:
 
-  def __init__(self, coordinates=()):
+  def __init__(self, coordinates):
     self.coordinates = coordinates
     self.parent = self
     self.rank = 0
@@ -14,6 +14,22 @@ class Node:
     while self.parent != self.parent.parent:
       self.parent = self.parent.parent
     return self.parent
+
+
+class WallNode:
+
+  def __init__(self, coordinates):
+    self.coordinates = coordinates
+
+
+class Edge:
+
+  def __init__(self, path_node_1, path_node_2, wall_node_1, wall_node_2):
+    self.path_nodes = [path_node_1, path_node_2]
+    self.wall_nodes = [wall_node_1, wall_node_2]
+
+
+# TODO: convert drawn nodes into wall nodes and edges into Edges
 
 
 class Shape(ABC):
@@ -48,14 +64,14 @@ class Rectangle(Shape):
     
     # first node
     if self.x_units >= 1 and self.y_units >= 1:
-      start_node = Node((0,0))
+      start_node = PathNode((0,0))
       self.nodes.add(start_node)
 
     # first row
     start_row = []
     prev_node = start_node
     for x in range(1, self.x_units):
-      new_node = Node((x,0))
+      new_node = PathNode((x,0))
       self.nodes.add(new_node)
       self.edges.add(frozenset([new_node, prev_node]))
       start_row.append(new_node)
@@ -65,7 +81,7 @@ class Rectangle(Shape):
     prev_col = []
     prev_node = start_node
     for y in range(1, self.y_units):
-      new_node = Node((0,y))
+      new_node = PathNode((0,y))
       self.nodes.add(new_node)
       self.edges.add(frozenset([new_node, prev_node]))
       prev_col.append(new_node)
@@ -77,7 +93,7 @@ class Rectangle(Shape):
       new_col = []
       prev_y = prev_col[0] if len(prev_col) > 0 else None
       for y in range(1, self.y_units):
-        new_node = Node((x,y))
+        new_node = PathNode((x,y))
         self.nodes.add(new_node)
         self.edges.add(frozenset([new_node, prev_x]))
         self.edges.add(frozenset([new_node, prev_y]))
