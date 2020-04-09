@@ -11,7 +11,7 @@ class Maze():
     self.shape = None
     self.background = None
     self.edge_list = None
-    self.maze_edges = None
+    self.maze_walls = None
     self.node_parents = {}
 
   def set_shape(self, shape, *args):
@@ -58,25 +58,25 @@ class Maze():
         return True
 
     # reset maze
-    for node in self.shape.nodes:
+    for node in self.shape.path_nodes:
       node.parent = node
     random.shuffle(self.edge_list)
-    self.maze_edges = []
+    self.maze_walls = []
 
     for edge in self.edge_list:
       if _is_maze_edge(edge):
-        self.maze_edges.append(edge)
+        self.maze_walls.append(edge)
 
-  def _draw_maze_edges(self):
-    if self.maze_edges is None:
+  def _draw_maze_walls(self):
+    if self.maze_walls is None:
       error_msg = 'Maze edges have not been set. Call randomize_maze_edges() to set maze edges.'
       raise AttributeError(error_msg)
-    self.shape.draw_edges(self.image, self.maze_edges)
+    self.shape.draw_edges(self.image, self.maze_walls)
 
   def draw_maze(self):
     self._draw_background()
     self._draw_nodes()
-    self._draw_maze_edges()
+    self._draw_maze_walls()
 
   def draw_random_maze(self):
     self.randomize_maze_edges()
