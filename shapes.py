@@ -45,8 +45,15 @@ class OuterEdge(Edge):
 
 class Shape(ABC):
 
+  def __init__(self, phrase=""):
+    self.phrase = phrase
+
   @abstractmethod
   def _init_nodes_and_edges(self):
+    pass
+
+  @abstractmethod
+  def _init_phrase(self):
     pass
 
   @abstractmethod
@@ -64,7 +71,8 @@ class Shape(ABC):
 
 class Rectangle(Shape):
 
-  def __init__(self, x_units, y_units):
+  def __init__(self, x_units, y_units, phrase=""):
+    super().__init__(phrase)
     self.x_units = x_units
     self.y_units = y_units
     self._init_nodes_and_edges()
@@ -205,6 +213,21 @@ class Rectangle(Shape):
     if w_wall_node:
       self.outer_edges.add(OuterEdge(w_wall_node, last_wall_node))
 
+  def _init_char(self, char, start_node):
+    # use x_units, y_units
+    # move edges from inner edges to phrase edges
+    # if adding a diagonal edge, remove the surrounding edges
+    if char == 'A':
+      pass
+    else:
+      error_msg = "'{}' is not a valid charactor.".format(char)
+      raise ValueError(error_msg)
+
+  def _init_phrase(self):
+    phrase_length = len(self.phrase)
+    
+    pass
+
   def _calc_point(self, node, width, height):
     x, y = node.coordinates
     center_x = width//2
@@ -228,6 +251,15 @@ class Rectangle(Shape):
   def draw_edges(self, img, edges):
     width, height = img.size
     line_width = 5
+    draw = ImageDraw.Draw(img)
+    for edge in edges:
+      points = [self._calc_point(node, width, height) for node in edge.wall_nodes]
+      draw.line(points, fill=colors['black'], width=line_width)
+
+  def draw_phrase_edges(self, img, edges):
+    # draw edges but thicker
+    width, height = img.size
+    line_width = 8
     draw = ImageDraw.Draw(img)
     for edge in edges:
       points = [self._calc_point(node, width, height) for node in edge.wall_nodes]
