@@ -76,12 +76,26 @@ class Rectangle(Shape):
     self.x_units = x_units
     self.y_units = y_units
     self._init_nodes_and_edges()
+    self._init_phrase()
+
+  def _add_path_node(self, path_node):
+    self.path_nodes[path_node.coordinates] = path_node
+
+  def _add_wall_node(self, wall_node):
+    self.wall_nodes[wall_node.coordinates] = wall_node
+
+  def _add_wall_nodes(self, wall_nodes):
+    for wall_node in wall_nodes:
+      self._add_wall_node(wall_node)
+
+  def _add_inner_edge(self, inner_edge):
+    self.inner_edges[frozenset(inner_edge.path_nodes)] = inner_edge
 
   def _init_nodes_and_edges(self):
-    self.path_nodes = set()
-    self.wall_nodes = set()
+    self.path_nodes = {}
+    self.wall_nodes = {}
     self.outer_edges = set()
-    self.inner_edges = set()
+    self.inner_edges = {}
 
     last_wall_col = []
     last_wall_row = []
@@ -90,13 +104,13 @@ class Rectangle(Shape):
     if self.x_units >= 1 and self.y_units >= 1:
       # first path node
       start_path_node = PathNode((0,0))
-      self.path_nodes.add(start_path_node)
+      self._add_path_node(start_path_node)
       # first border corner
       start_nw_wall_node = WallNode((0,0))
       start_sw_wall_node = WallNode((0,1))
       start_ne_wall_node = WallNode((1,0))
-      self.wall_nodes.update([
-          start_nw_wall_node, start_sw_wall_node, start_ne_wall_node])
+      self._add_wall_nodes((
+          start_nw_wall_node, start_sw_wall_node, start_ne_wall_node))
       self.outer_edges.update([
           OuterEdge(start_nw_wall_node, start_sw_wall_node),
           OuterEdge(start_nw_wall_node, start_ne_wall_node)])
@@ -109,13 +123,13 @@ class Rectangle(Shape):
     for y in range(1, self.y_units):
       # path node
       new_path_node = PathNode((0,y))
-      self.path_nodes.add(new_path_node)
+      self._add_path_node(new_path_node)
       # left corner
       sw_wall_node = WallNode((0,y+1))
       ne_wall_node = WallNode((1,y))
-      self.wall_nodes.update([sw_wall_node, ne_wall_node])
+      self._add_wall_nodes((sw_wall_node, ne_wall_node))
       self.outer_edges.add(OuterEdge(prev_wall_node, sw_wall_node))
-      self.inner_edges.add(InnerEdge(
+      self._add_inner_edge(InnerEdge(
           prev_wall_node, ne_wall_node, prev_path_node, new_path_node))
       # next
       prev_path_col.append(new_path_node)
@@ -134,12 +148,12 @@ class Rectangle(Shape):
     for x in range(1, self.x_units):
       # path node
       new_path_node = PathNode((x,0))
-      self.path_nodes.add(new_path_node)
+      self._add_path_node(new_path_node)
       # top corner
       sw_wall_node = WallNode((x,1)) if x>1 else prev_wall_col[0]
       ne_wall_node = WallNode((x+1,0))
-      self.wall_nodes.update([sw_wall_node, ne_wall_node])
-      self.inner_edges.add(InnerEdge(
+      self._add_wall_nodes((sw_wall_node, ne_wall_node))
+      self._add_inner_edge(InnerEdge(
           prev_wall_node, sw_wall_node, prev_path_node, new_path_node))
       self.outer_edges.add(OuterEdge(prev_wall_node, ne_wall_node))
       # next
@@ -161,19 +175,18 @@ class Rectangle(Shape):
       for y in range(1, self.y_units):
         # path node
         new_path_node = PathNode((x,y))
-        self.path_nodes.add(new_path_node)
+        self._add_path_node(new_path_node)
         # wall corner
         nw_wall_node = prev_wall_sw
         sw_wall_node = prev_wall_col[y] \
             if y<self.y_units-1 else WallNode((x,y+1))
         ne_wall_node = WallNode((x+1,y)) \
             if y>1 or x==self.x_units-1 else start_wall_row[x]
-        self.wall_nodes.update([sw_wall_node, ne_wall_node])
-        self.inner_edges.update([
-            InnerEdge(
-                nw_wall_node, sw_wall_node, prev_path_y, new_path_node),
-            InnerEdge(
-                nw_wall_node, ne_wall_node, prev_path_x, new_path_node)])
+        self._add_wall_nodes((sw_wall_node, ne_wall_node))
+        self._add_inner_edge(InnerEdge(
+            nw_wall_node, sw_wall_node, prev_path_y, new_path_node))
+        self._add_inner_edge(InnerEdge(
+            nw_wall_node, ne_wall_node, prev_path_x, new_path_node))
         # next y
         new_path_col.append(new_path_node)
         if y < self.y_units-1:
@@ -195,7 +208,7 @@ class Rectangle(Shape):
 
     # last wall node
     last_wall_node = WallNode((self.x_units, self.y_units))
-    self.wall_nodes.add(last_wall_node)
+    self._add_wall_node(last_wall_node)
 
     # last border column
     n_wall_node = last_wall_col[0] if len(last_wall_col)>0 else None
@@ -213,20 +226,54 @@ class Rectangle(Shape):
     if w_wall_node:
       self.outer_edges.add(OuterEdge(w_wall_node, last_wall_node))
 
+  def _assign_phrase_edge(self, path_node_0, path_node_1):
+    path_nodes = frozenset((path_node_0, path_node_1))
+    self.phrase_edges.add(self.inner_edges[path_nodes])
+    del self.inner_edges[path_nodes]
+
+  def _add_forward_diag_phrase_edge(self, path_node_0):
+    # TODO: get wall nodes from path node coordinates
+    # TODO: force empty wall nodes to not have any walls
+    # TODO: figure this out
+    pass
+
   def _init_char(self, char, start_node):
     # use x_units, y_units
     # move edges from inner edges to phrase edges
     # if adding a diagonal edge, remove the surrounding edges
-    if char == 'A':
-      pass
+    if char == 'O':
+      start_x = start_node.coordinates[0]
+      start_y = start_node.coordinates[1]
+      for y in range(start_y+1, start_y+5):
+        self._assign_phrase_edge(
+            self.path_nodes[start_x-1, y], self.path_nodes[start_x, y])
+        self._assign_phrase_edge(
+            self.path_nodes[start_x+3, y], self.path_nodes[start_x+4, y])
+      for x in range(start_x+1, start_x+3):
+        self._assign_phrase_edge(
+            self.path_nodes[x, start_y-1], self.path_nodes[x, start_y])
+        self._assign_phrase_edge(
+            self.path_nodes[x, start_y+5], self.path_nodes[x, start_y+6])
     else:
       error_msg = "'{}' is not a valid charactor.".format(char)
       raise ValueError(error_msg)
 
   def _init_phrase(self):
+    self.phrase_edges = set()
     phrase_length = len(self.phrase)
-    
-    pass
+    CHAR_WIDTH = 4
+    CHAR_HEIGHT = 6
+    CHAR_SPACING = 1
+    phrase_width = phrase_length*CHAR_WIDTH + (phrase_length-1)*CHAR_SPACING
+    start_x_0 = int(self.x_units/2 - phrase_width/2)
+    start_y = int(self.y_units/2 - CHAR_HEIGHT/2)
+    # TODO: error check for length of phrase and grid size
+    # TODO: allow for new lines, longer phrases
+
+    for char_index, char in enumerate(self.phrase):
+      start_x = start_x_0 + char_index*(CHAR_WIDTH+CHAR_SPACING)
+      start_node = self.path_nodes[(start_x, start_y)]
+      self._init_char(char, start_node)
 
   def _calc_point(self, node, width, height):
     x, y = node.coordinates
@@ -241,7 +288,7 @@ class Rectangle(Shape):
     width, height = img.size
     half_length = 2
     draw = ImageDraw.Draw(img)
-    for node in self.wall_nodes:
+    for node in self.wall_nodes.values():
       x, y = self._calc_point(node, width, height)
       draw.rectangle(
         (x-half_length, y-half_length, x+half_length, y+half_length),

@@ -21,7 +21,7 @@ class Maze():
     except AttributeError:
       error_msg = '{} is not a valid Shape.'.format(shape)
       raise ValueError(error_msg)
-    self.inner_edges = list(self.shape.inner_edges)
+    self.inner_edges = list(self.shape.inner_edges.values())
     self.outer_edges = list(self.shape.outer_edges)
 
   def set_background(self, background):
@@ -64,7 +64,7 @@ class Maze():
         return False
 
     # reset maze
-    for node in self.shape.path_nodes:
+    for node in self.shape.path_nodes.values():
       node.parent = node
     random.shuffle(self.inner_edges)
     self.maze_walls = []
