@@ -13,6 +13,7 @@ class Maze():
     self.outer_edges = None
     self.inner_edges = None
     self.border_walls = None
+    self.phrase_walls = None
     self.maze_walls = None
 
   def set_shape(self, shape, *args):
@@ -23,6 +24,21 @@ class Maze():
       raise ValueError(error_msg)
     self.inner_edges = list(self.shape.inner_edges.values())
     self.outer_edges = list(self.shape.outer_edges)
+    self.phrase_edges = list(self.shape.optional_phrase_edges)
+
+  def set_phrase(self, phrase=""):
+    self.shape.set_phrase(phrase)
+
+    # reset shape
+    self.inner_edges = list(self.shape.inner_edges.values())
+    self.outer_edges = list(self.shape.outer_edges)
+    self.phrase_edges = list(self.shape.optional_phrase_edges)
+
+    # reset maze
+    random.shuffle(self.inner_edges)
+    random.shuffle(self.phrase_edges)
+    self.phrase_walls = self.shape.forced_phrase_edges
+    self.maze_walls = set()
 
   def set_background(self, background):
     backgrounds.validate_background(background)
@@ -39,7 +55,7 @@ class Maze():
 
   def randomize_border_walls(self):
     random.shuffle(self.outer_edges)
-    self.border_walls = self.outer_edges[2:]
+    self.border_walls = set(self.outer_edges[2:])
 
   def randomize_maze_walls(self):
     if self.shape is None:
@@ -67,20 +83,28 @@ class Maze():
     for node in self.shape.path_nodes.values():
       node.parent = node
     random.shuffle(self.inner_edges)
-    self.maze_walls = []
+    random.shuffle(self.phrase_edges)
+    self.phrase_walls = self.shape.forced_phrase_edges
+    self.maze_walls = set()
 
+    for edge in self.phrase_edges:
+      if _is_maze_wall(edge):
+        self.phrase_walls.add(edge)
     for edge in self.inner_edges:
       if _is_maze_wall(edge):
-        self.maze_walls.append(edge)
+        self.maze_walls.add(edge)
 
   def _draw_maze_walls(self):
-    if self.maze_walls is None:
+    if self.maze_walls is None or self.phrase_walls is None:
       error_msg = 'Maze walls have not been set. Call randomize_maze_walls() to set maze walls.'
       raise AttributeError(error_msg)
     if self.border_walls is None:
       error_msg = 'Border walls have not been set. Call randomize_border_walls() to set border walls.'
       raise AttributeError(error_msg)
-    self.shape.draw_edges(self.image, self.border_walls + self.maze_walls)
+    self.shape.draw_edges(self.image, self.border_walls)
+    self.shape.draw_phrase_edges(self.image, self.shape.forced_phrase_edges)
+    self.shape.draw_phrase_edges(self.image, self.phrase_edges)
+    self.shape.draw_edges(self.image, self.maze_walls)
 
   def draw_maze(self):
     self._draw_background()
@@ -95,6 +119,8 @@ class Maze():
   def draw_graph(self):
     self._draw_background()
     self._draw_nodes()
+#    self.shape.draw_phrase_edges(self.image, self.shape.forced_phrase_edges)
+#    self.shape.draw_phrase_edges(self.image, self.phrase_edges)
     self.shape.draw_edges(self.image, self.inner_edges)
 
   def save_maze_as_png(self, file_name):

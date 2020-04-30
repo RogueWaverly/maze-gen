@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from PIL import Image, ImageDraw
+import random
 from colors import colors
 
 
@@ -7,6 +8,9 @@ class Node(ABC):
 
   def __init__(self, coordinates):
     self.coordinates = coordinates
+
+  def __repr__(self):
+    return str(self.coordinates)
 
 
 class PathNode(Node):
@@ -31,12 +35,22 @@ class Edge(ABC):
   def __init__(self, wall_node_1, wall_node_2):
     self.wall_nodes = [wall_node_1, wall_node_2]
 
+  def __repr__(self):
+    return "{wall_node_0}-{wall_node_1}".format(
+      wall_node_0=self.wall_nodes[0],
+      wall_node_1=self.wall_nodes[1])
+
 
 class InnerEdge(Edge):
 
   def __init__(self, wall_node_1, wall_node_2, path_node_1, path_node_2):
     super().__init__(wall_node_1, wall_node_2)
     self.path_nodes = [path_node_1, path_node_2]
+
+  def __repr__(self):
+    return "{path_node_0}-{path_node_1}".format(
+      path_node_0=self.path_nodes[0].__repr__(),
+      path_node_1=self.path_nodes[1].__repr__())
 
 
 class OuterEdge(Edge):
@@ -55,6 +69,11 @@ class Shape(ABC):
   @abstractmethod
   def _init_phrase(self):
     pass
+
+  def set_phrase(self, phrase=""):
+    self.phrase = phrase
+    self._init_nodes_and_edges()
+    self._init_phrase()
 
   @abstractmethod
   def _calc_point(self, node):
@@ -226,40 +245,123 @@ class Rectangle(Shape):
     if w_wall_node:
       self.outer_edges.add(OuterEdge(w_wall_node, last_wall_node))
 
-  def _assign_phrase_edge(self, path_node_0, path_node_1):
+  def _assign_forced_phrase_edge(self, path_node_0, path_node_1):
     path_nodes = frozenset((path_node_0, path_node_1))
-    self.phrase_edges.add(self.inner_edges[path_nodes])
-    del self.inner_edges[path_nodes]
+    self.forced_phrase_edges.add(self.inner_edges[path_nodes])
+    try:
+      del self.inner_edges[path_nodes]
+    except KeyError:
+      pass
 
-  def _add_forward_diag_phrase_edge(self, path_node_0):
-    # TODO: get wall nodes from path node coordinates
-    # TODO: force empty wall nodes to not have any walls
-    # TODO: figure this out
-    pass
+  def _assign_optional_phrase_edge(self, path_node_0, path_node_1):
+    path_nodes = frozenset((path_node_0, path_node_1))
+    self.optional_phrase_edges.add(self.inner_edges[path_nodes])
+    try:
+      del self.inner_edges[path_nodes]
+    except KeyError:
+      pass
+
+  def _remove_path_node(self, path_node):
+
+    # remove all inner edges with path cell
+    x = path_node.coordinates[0]
+    y = path_node.coordinates[1]
+    orig_inner_edges = self.inner_edges
+    try:
+      del self.inner_edges[frozenset((path_node, self.path_nodes[x,y-1]))]
+    except KeyError:
+      pass
+    try:
+      del self.inner_edges[frozenset((path_node, self.path_nodes[x,y+1]))]
+    except KeyError:
+      pass
+    try:
+      del self.inner_edges[frozenset((path_node, self.path_nodes[x-1,y]))]
+    except KeyError:
+      pass
+    try:
+      del self.inner_edges[frozenset((path_node, self.path_nodes[x+1,y]))]
+    except KeyError:
+      pass
+    for edge in orig_inner_edges.values():
+      if not edge in self.inner_edges.values():
+        print(edge)
+
+    # remove path cell
+    try:
+      del self.path_nodes[path_node.coordinates]
+    except KeyError:
+      pass
+
+  def _add_forward_diag_phrase_edge(self, path_node):
+
+    # join sets of random adjacent node pair
+    x = path_node.coordinates[0]
+    y = path_node.coordinates[1]
+    if random.choice([True, False]):
+      self.path_nodes[x,y-1].parent = self.path_nodes[x+1,y]
+    else:
+      self.path_nodes[x,y+1].parent = self.path_nodes[x-1,y]
+
+    # remove center path node and edges
+    self._remove_path_node(path_node)
+
+    # add diagonal edge
+    ne_wall_node = self.wall_nodes[x+1,y]
+    sw_wall_node = self.wall_nodes[x,y+1]
+    self.forced_phrase_edges.add(OuterEdge(ne_wall_node, sw_wall_node))
+
+  def _add_backward_diag_phrase_edge(self, path_node):
+
+    # join sets of random adjacent node pair
+    x = path_node.coordinates[0]
+    y = path_node.coordinates[1]
+    if random.choice([True, False]):
+      self.path_nodes[x,y-1].parent = self.path_nodes[x-1,y]
+    else:
+      self.path_nodes[x,y+1].parent = self.path_nodes[x+1,y]
+
+    # remove center path node and edges
+    self._remove_path_node(path_node)
+
+    # add diagonal edge
+    nw_wall_node = self.wall_nodes[x,y]
+    se_wall_node = self.wall_nodes[x+1,y+1]
+    self.forced_phrase_edges.add(OuterEdge(nw_wall_node, se_wall_node))
 
   def _init_char(self, char, start_node):
-    # use x_units, y_units
-    # move edges from inner edges to phrase edges
-    # if adding a diagonal edge, remove the surrounding edges
+    # TODO: fix phrase edge logic!
+    # force some walls outside the diagonal
+    # force some wall openings in letter loops
+
     if char == 'O':
       start_x = start_node.coordinates[0]
       start_y = start_node.coordinates[1]
       for y in range(start_y+1, start_y+5):
-        self._assign_phrase_edge(
-            self.path_nodes[start_x-1, y], self.path_nodes[start_x, y])
-        self._assign_phrase_edge(
-            self.path_nodes[start_x+3, y], self.path_nodes[start_x+4, y])
+        self._assign_optional_phrase_edge(
+            self.path_nodes[start_x-1,y], self.path_nodes[start_x,y])
+        self._assign_optional_phrase_edge(
+            self.path_nodes[start_x+3,y], self.path_nodes[start_x+4,y])
       for x in range(start_x+1, start_x+3):
-        self._assign_phrase_edge(
-            self.path_nodes[x, start_y-1], self.path_nodes[x, start_y])
-        self._assign_phrase_edge(
-            self.path_nodes[x, start_y+5], self.path_nodes[x, start_y+6])
+        self._assign_optional_phrase_edge(
+            self.path_nodes[x,start_y-1], self.path_nodes[x,start_y])
+        self._assign_optional_phrase_edge(
+            self.path_nodes[x,start_y+5], self.path_nodes[x,start_y+6])
+      self._add_forward_diag_phrase_edge(start_node)
+      self._add_backward_diag_phrase_edge(
+          self.path_nodes[start_x+3,start_y])
+      self._add_forward_diag_phrase_edge(
+          self.path_nodes[start_x+3,start_y+5])
+      self._add_backward_diag_phrase_edge(
+          self.path_nodes[start_x,start_y+5])
+
     else:
       error_msg = "'{}' is not a valid charactor.".format(char)
       raise ValueError(error_msg)
 
   def _init_phrase(self):
-    self.phrase_edges = set()
+    self.forced_phrase_edges = set()
+    self.optional_phrase_edges = set()
     phrase_length = len(self.phrase)
     CHAR_WIDTH = 4
     CHAR_HEIGHT = 6
