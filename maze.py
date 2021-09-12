@@ -1,5 +1,6 @@
 from PIL import Image
 import random
+
 from colors import colors
 import backgrounds
 import shapes

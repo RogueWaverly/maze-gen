@@ -1,4 +1,5 @@
 from PIL import Image
+
 import backgrounds
 from colors import colors
 

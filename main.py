@@ -1,10 +1,9 @@
+import constant
 from maze import Maze
 
-width = 512
-height = 512
-maze = Maze(width, height)
-maze.set_shape('Rectangle', 16, 16)
-maze.set_phrase("OO")
+maze = Maze(constant.IMG_WIDTH, constant.IMG_HEIGHT)
+maze.set_shape('Rectangle', constant.RECT_MAZE_WIDTH, constant.RECT_MAZE_HEIGHT)
+#maze.set_phrase("OO")
 maze.set_background('rgb_gradient')
 maze.draw_random_maze()
 maze.save_maze_as_png("MAZE")

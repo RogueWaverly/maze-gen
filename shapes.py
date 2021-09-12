@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from PIL import Image, ImageDraw
 import random
+
 from colors import colors
 
 
